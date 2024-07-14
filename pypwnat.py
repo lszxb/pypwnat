@@ -5,7 +5,7 @@
 import socket
 import logging
 import time
-from ipaddr import IPAddress
+from ipaddress import IPv4Address
 from threading import Thread
 from bitstring import Bits
 
@@ -17,7 +17,7 @@ SERVER_PORT = 2345
 CLIENT_PORT = 2345
 BUFSIZE = 4096
 NO_RESPONSE_IP = '59.66.1.1'
-UDP_HELLO_MSG = 'Hello from pypwnat'
+UDP_HELLO_MSG = b'Hello from pypwnat'
 
 
 def checksum(data, checksum_offset=1):
@@ -25,7 +25,7 @@ def checksum(data, checksum_offset=1):
         put the result in the `checksum_offset`th 16-bit word
         data and returned data is bitstring.Bits'''
     chunks = list(data.cut(16))
-    s = sum(map(lambda x: x.uint, chunks))
+    s = sum([x.uint for x in chunks])
     s = (s & 0xffff) + (s >> 16)
     chunks[checksum_offset] = ~ Bits(length=16, uint=s)
     return Bits(0).join(chunks)
@@ -33,7 +33,7 @@ def checksum(data, checksum_offset=1):
 
 def make_ip_packet(src, dst, protocol, body, id=42, ttl=64):
     ip_header = Bits(hex='4500') # IP version and type of service and etc
-    total_length = Bits(length=16, uint=20+body.length/8) # Total length
+    total_length = Bits(length=16, uint=20+body.length//8) # Total length
     # The BSD suite of platforms (excluding OpenBSD) 
     # present the IP offset and length in host byte order.
     # as they say... It's a feature, not a BUG!
@@ -44,8 +44,8 @@ def make_ip_packet(src, dst, protocol, body, id=42, ttl=64):
     ip_header += Bits(length=8, uint=ttl) # TTL
     ip_header += Bits(length=8, uint=protocol)
     ip_header += Bits(hex='0000') # checksum
-    ip_header += Bits(length=32, uint=int(IPAddress(src)))
-    ip_header += Bits(length=32, uint=int(IPAddress(dst)))
+    ip_header += Bits(length=32, uint=int(IPv4Address(src)))
+    ip_header += Bits(length=32, uint=int(IPv4Address(dst)))
     return checksum(ip_header, 5) + body
 
 
@@ -81,7 +81,7 @@ def handle_icmp_response(response):
     logging.debug('Handling response in new thread.')
     response = Bits(bytes=response)
     source_ip = response[12*8:][:4*8]
-    source_ip = IPAddress(source_ip.uint)
+    source_ip = IPv4Address(source_ip.uint)
     response = response[20*8:]  # ignore IP header
     typ = response[:8]
     if typ.uint != 11:
@@ -129,7 +129,7 @@ def run_client(server_ip):
             continue
         else:
             logging.info('Got UDP response!')
-            print response
+            print(response)
             break
 
 
