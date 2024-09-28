@@ -18,6 +18,7 @@ CLIENT_PORT = 2345
 BUFSIZE = 4096
 NO_RESPONSE_IP = '59.66.1.1'
 UDP_HELLO_MSG = b'Hello from pypwnat'
+ICMP_HELLO_MSG = b'Hello from pypwnat in ICMP'
 
 
 def checksum(data, checksum_offset=1):
@@ -67,11 +68,11 @@ def send_echo_request(sock, ip, seq=42, id=42):
     return ip_packet
 
 
-def send_time_exceed(sock, server_ip, seq=42, id=42):
+def send_time_exceed(sock, server_ip, seq=42, id=42, additional_data=ICMP_HELLO_MSG):
     logging.debug('Sending time exceed message.')
-    inner_icmp = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE)
+    inner_icmp = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE) + additional_data
     inner_ip = make_ip_packet(server_ip, NO_RESPONSE_IP, ICMP_PROTO, inner_icmp)
-    icmp_packet = make_icmp_packet(ICMP_TIME_EXCEED_TYPE, body=inner_ip)
+    icmp_packet = make_icmp_packet(ICMP_TIME_EXCEED_TYPE, id=0, seq=0, body=inner_ip)
     ip_packet = make_ip_packet(0, server_ip, ICMP_PROTO, icmp_packet)
     sock.sendto(ip_packet.bytes, (server_ip, 1))
     return ip_packet
@@ -88,6 +89,7 @@ def handle_icmp_response(response):
         logging.debug('Not time exceed packet, ignore.')
         return
     logging.info('Got response from %s' % source_ip.compressed)
+    logging.info('with additional data: %s' % response.bytes[8+20+8:])
     udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udpsock.bind(('0.0.0.0', SERVER_PORT))
     udpsock.connect((source_ip.compressed, CLIENT_PORT))
