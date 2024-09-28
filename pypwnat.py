@@ -90,7 +90,7 @@ def send_time_exceed(sock, server_ip, additional_data=ICMP_HELLO_MSG):
     return icmp_packet
 
 
-def handle_icmp_response(response):
+def handle_icmp_response(response, udpsock):
     logging.debug('Handling response in new thread.')
     response = Bits(bytes=response)
     source_ip = response[12*8:][:4*8]
@@ -106,16 +106,15 @@ def handle_icmp_response(response):
         return
     logging.info('Got response from %s' % source_ip.compressed)
     logging.info('with additional data: %s' % response.bytes[8+20+8:])
-    udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    udpsock.bind(('0.0.0.0', SERVER_PORT))
-    udpsock.connect((source_ip.compressed, CLIENT_PORT))
-    udpsock.send(UDP_HELLO_MSG)
+    udpsock.sendto(UDP_HELLO_MSG, (source_ip.compressed, CLIENT_PORT))
 
 
 def run_server(ping_interval=10.0):
     sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, ICMP_PROTO)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
     sock.settimeout(ping_interval)
+    udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udpsock.bind(('0.0.0.0', SERVER_PORT))
     while True:
         send_echo_request(sock, NO_RESPONSE_IP)
         try:
@@ -125,7 +124,7 @@ def run_server(ping_interval=10.0):
             continue
         else:
             logging.debug('Got ICMP response!')
-            th = Thread(target=handle_icmp_response, args=[response])
+            th = Thread(target=handle_icmp_response, args=[response, udpsock])
             th.start()
 
 
