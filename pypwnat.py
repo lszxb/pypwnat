@@ -32,13 +32,14 @@ def checksum(data, checksum_offset=1):
     return Bits(0).join(chunks)
 
 
-def make_ip_packet(src, dst, protocol, body, id=42, ttl=64):
+def make_ip_packet(src, dst, protocol, body, id=42, ttl=64, hton_length=True):
     ip_header = Bits(hex='4500') # IP version and type of service and etc
     total_length = Bits(length=16, uint=20+body.length//8) # Total length
     # The BSD suite of platforms (excluding OpenBSD) 
     # present the IP offset and length in host byte order.
     # as they say... It's a feature, not a BUG!
-    total_length = Bits(length=16, uint=socket.htons(total_length.uint))
+    if hton_length: # This should be disabled when building inner IP packet
+        total_length = Bits(length=16, uint=socket.htons(total_length.uint))
     ip_header += total_length
     ip_header += Bits(length=16, uint=id)  # identification
     ip_header += Bits(hex='0000')  # flags, fragment offset
@@ -71,7 +72,7 @@ def send_echo_request(sock, ip, seq=42, id=42):
 def send_time_exceed(sock, server_ip, seq=42, id=42, additional_data=ICMP_HELLO_MSG):
     logging.debug('Sending time exceed message.')
     inner_icmp = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE) + additional_data
-    inner_ip = make_ip_packet(server_ip, NO_RESPONSE_IP, ICMP_PROTO, inner_icmp, ttl=1)
+    inner_ip = make_ip_packet(server_ip, NO_RESPONSE_IP, ICMP_PROTO, inner_icmp, ttl=1, hton_length=False)
     icmp_packet = make_icmp_packet(ICMP_TIME_EXCEED_TYPE, id=0, seq=0, body=inner_ip)
     ip_packet = make_ip_packet(0, server_ip, ICMP_PROTO, icmp_packet)
     sock.sendto(ip_packet.bytes, (server_ip, 1))
