@@ -22,6 +22,13 @@ UDP_HELLO_MSG = b'Hello from pypwnat'
 ICMP_HELLO_MSG = b'Hello from pypwnat in ICMP'
 
 
+def get_local_server_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    local_ip = s.getsockname()[0]
+    return local_ip
+
+
 def checksum(data, checksum_offset=1):
     ''' calcualte checksum using one's complement sum of all 16-bit words,
         put the result in the `checksum_offset`th 16-bit word
@@ -68,7 +75,7 @@ def send_echo_request(sock, ip, seq=42, id=42):
     ''' a simple ping '''
     logging.debug('Sending echo request with id=%d, seq=%d.' % (id, seq))
     icmp_packet = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE)
-    ip_packet = make_ip_packet(0, ip, ICMP_PROTO, icmp_packet)
+    ip_packet = make_ip_packet(get_local_server_ip(), ip, ICMP_PROTO, icmp_packet)
     sock.sendto(ip_packet.bytes, (ip, 0))
     return ip_packet
 
