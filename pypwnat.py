@@ -56,8 +56,10 @@ def make_icmp_packet(typ, code=0, body=None, id=42, seq=42):
     icmp_header += Bits(length=8, uint=code) # code
     icmp_header += Bits(hex='0000')  # checksum
     icmp_header += Bits(length=16, uint=id) + Bits(length=16, uint=seq)
+    if body is not None:
+        icmp_header += body
     icmp_header = checksum(icmp_header)
-    return icmp_header if body is None else (icmp_header+body)
+    return icmp_header
 
 
 def send_echo_request(sock, ip, seq=42, id=42):
