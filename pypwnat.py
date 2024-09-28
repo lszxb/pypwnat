@@ -88,7 +88,7 @@ def handle_icmp_response(response):
     if typ.uint != 11:
         logging.debug('Not time exceed packet, ignore.')
         return
-    inside_target_ip = IPv4Address(response.bytes[8*8+16*8:][:4*8].uint)
+    inside_target_ip = IPv4Address(response[8*8+16*8:][:4*8].uint)
     if not inside_target_ip.compressed == str(NO_RESPONSE_IP):
         logging.debug(f'Not ping to {NO_RESPONSE_IP} inside time exceed packet, ignore.')
         return
