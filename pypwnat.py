@@ -131,7 +131,7 @@ def run_client(server_ip):
     while True:
         logging.debug('Sending hello message via UDP.')
         udpsock.send(UDP_HELLO_MSG)
-        send_time_exceed(sock, server_ip, NO_RESPONSE_IP)
+        send_time_exceed(sock, server_ip)
         try:
             response = udpsock.recv(BUFSIZE)
         except socket.error:
