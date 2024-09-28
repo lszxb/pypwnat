@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # Created by i@BlahGeek.com at 2014-01-07
 
+import sys
 import socket
 import logging
 import time
@@ -39,7 +40,8 @@ def make_ip_packet(src, dst, protocol, body, id=42, ttl=64, hton_length=True):
     # present the IP offset and length in host byte order.
     # as they say... It's a feature, not a BUG!
     if hton_length: # This should be disabled when building inner IP packet
-        total_length = Bits(length=16, uint=socket.htons(total_length.uint))
+        if sys.platform == 'linux':
+            total_length = Bits(length=16, uint=socket.htons(total_length.uint))
     ip_header += total_length
     ip_header += Bits(length=16, uint=id)  # identification
     ip_header += Bits(hex='0000')  # flags, fragment offset
@@ -67,7 +69,7 @@ def send_echo_request(sock, ip, seq=42, id=42):
     logging.debug('Sending echo request with id=%d, seq=%d.' % (id, seq))
     icmp_packet = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE)
     ip_packet = make_ip_packet(0, ip, ICMP_PROTO, icmp_packet)
-    sock.sendto(ip_packet.bytes, (ip, 1))
+    sock.sendto(ip_packet.bytes, (ip, ICMP_PROTO))
     return ip_packet
 
 
@@ -76,8 +78,8 @@ def send_time_exceed(sock, server_ip, seq=42, id=42, additional_data=ICMP_HELLO_
     inner_icmp = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE, body=additional_data)
     inner_ip = make_ip_packet(server_ip, NO_RESPONSE_IP, ICMP_PROTO, inner_icmp, ttl=1, hton_length=False)
     icmp_packet = make_icmp_packet(ICMP_TIME_EXCEED_TYPE, id=0, seq=0, body=inner_ip)
-    ip_packet = make_ip_packet(0, server_ip, ICMP_PROTO, icmp_packet)
-    sock.sendto(ip_packet.bytes, (server_ip, 1))
+    # ip_packet = make_ip_packet(0, server_ip, ICMP_PROTO, icmp_packet)
+    sock.sendto(icmp_packet.bytes, (server_ip, ICMP_PROTO))
     return ip_packet
 
 
@@ -122,7 +124,7 @@ def run_server(ping_interval=10.0):
 
 def run_client(server_ip):
     sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, ICMP_PROTO)
-    sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
+    # sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
     udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udpsock.bind(('0.0.0.0', CLIENT_PORT))
     udpsock.connect((server_ip, SERVER_PORT))
