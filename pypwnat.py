@@ -128,13 +128,14 @@ def run_client(server_ip):
     udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udpsock.bind(('0.0.0.0', CLIENT_PORT))
     udpsock.connect((server_ip, SERVER_PORT))
+    logging.debug('Sending hello message via UDP.')
+    udpsock.send(UDP_HELLO_MSG)
+    send_time_exceed(sock, server_ip)
     while True:
-        logging.debug('Sending hello message via UDP.')
-        udpsock.send(UDP_HELLO_MSG)
-        send_time_exceed(sock, server_ip)
         try:
             response = udpsock.recv(BUFSIZE)
-        except socket.error:
+        except socket.error as e:
+            logging.debug(e.strerror)
             logging.debug('UDP message refused, continue')
             time.sleep(0.1)
             continue
