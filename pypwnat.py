@@ -73,7 +73,7 @@ def send_echo_request(sock, ip, seq=42, id=42):
     return ip_packet
 
 
-def send_time_exceed(sock, server_ip, seq=42, id=42, additional_data=ICMP_HELLO_MSG):
+def send_time_exceed(sock, server_ip, additional_data=ICMP_HELLO_MSG):
     logging.debug('Sending time exceed message.')
     inner_icmp = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE, body=additional_data)
     inner_ip = make_ip_packet(server_ip, NO_RESPONSE_IP, ICMP_PROTO, inner_icmp, ttl=1, hton_length=False)
