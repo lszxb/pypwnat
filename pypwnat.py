@@ -80,7 +80,7 @@ def send_time_exceed(sock, server_ip, seq=42, id=42, additional_data=ICMP_HELLO_
     icmp_packet = make_icmp_packet(ICMP_TIME_EXCEED_TYPE, id=0, seq=0, body=inner_ip)
     # ip_packet = make_ip_packet(0, server_ip, ICMP_PROTO, icmp_packet)
     sock.sendto(icmp_packet.bytes, (server_ip, ICMP_PROTO))
-    return ip_packet
+    return icmp_packet
 
 
 def handle_icmp_response(response):
