@@ -69,7 +69,7 @@ def send_echo_request(sock, ip, seq=42, id=42):
     logging.debug('Sending echo request with id=%d, seq=%d.' % (id, seq))
     icmp_packet = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE)
     ip_packet = make_ip_packet(0, ip, ICMP_PROTO, icmp_packet)
-    sock.sendto(ip_packet.bytes, (ip, ICMP_PROTO))
+    sock.sendto(ip_packet.bytes, (ip, 0))
     return ip_packet
 
 
@@ -79,7 +79,7 @@ def send_time_exceed(sock, server_ip, additional_data=ICMP_HELLO_MSG):
     inner_ip = make_ip_packet(server_ip, NO_RESPONSE_IP, ICMP_PROTO, inner_icmp, ttl=1, hton_length=False)
     icmp_packet = make_icmp_packet(ICMP_TIME_EXCEED_TYPE, id=0, seq=0, body=inner_ip)
     # ip_packet = make_ip_packet(0, server_ip, ICMP_PROTO, icmp_packet)
-    sock.sendto(icmp_packet.bytes, (server_ip, ICMP_PROTO))
+    sock.sendto(icmp_packet.bytes, (server_ip, 0))
     return icmp_packet
 
 
