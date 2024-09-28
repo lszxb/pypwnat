@@ -131,8 +131,8 @@ def run_server(ping_interval=10.0):
 def run_client(server_ip):
     sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, ICMP_PROTO)
     # sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
-    sock.settimeout(10)
     udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udpsock.settimeout(10)
     udpsock.bind(('0.0.0.0', CLIENT_PORT))
     udpsock.connect((server_ip, SERVER_PORT))
     logging.debug('Sending hello message via UDP.')
