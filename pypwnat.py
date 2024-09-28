@@ -13,8 +13,8 @@ from bitstring import Bits
 ICMP_PROTO = socket.getprotobyname('icmp')
 ICMP_ECHO_REQUEST_TYPE = 8
 ICMP_TIME_EXCEED_TYPE = 11
-SERVER_PORT = 2345
-CLIENT_PORT = 2345
+SERVER_PORT = 23458
+CLIENT_PORT = 23458
 BUFSIZE = 4096
 NO_RESPONSE_IP = '59.66.1.1'
 UDP_HELLO_MSG = b'Hello from pypwnat'
