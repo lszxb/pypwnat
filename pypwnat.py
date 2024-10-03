@@ -8,6 +8,7 @@ import logging
 import time
 from ipaddress import IPv4Address
 from threading import Thread
+import os
 from bitstring import Bits
 
 
@@ -17,7 +18,8 @@ ICMP_TIME_EXCEED_TYPE = 11
 SERVER_PORT = 23458
 CLIENT_PORT = 23458
 BUFSIZE = 4096
-NO_RESPONSE_IP = '59.66.1.1'
+NO_RESPONSE_IP = os.environ.get('NO_RESPONSE_IP', '59.66.1.1')
+ICMP_ECHO_ID = int(os.environ.get('ICMP_ECHO_ID', 42))
 UDP_HELLO_MSG = b'Hello from pypwnat'
 ICMP_HELLO_MSG = b'Hello from pypwnat in ICMP'
 
@@ -82,7 +84,7 @@ def send_echo_request(sock, ip, seq=42, id=42):
 
 def send_time_exceed(sock, server_ip, additional_data=ICMP_HELLO_MSG):
     logging.debug('Sending time exceed message.')
-    inner_icmp = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE, body=additional_data)
+    inner_icmp = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE, id=ICMP_ECHO_ID, body=additional_data)
     inner_ip = make_ip_packet(server_ip, NO_RESPONSE_IP, ICMP_PROTO, inner_icmp, ttl=1, hton_length=False)
     icmp_packet = make_icmp_packet(ICMP_TIME_EXCEED_TYPE, id=0, seq=0, body=inner_ip)
     # ip_packet = make_ip_packet(0, server_ip, ICMP_PROTO, icmp_packet)
