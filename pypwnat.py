@@ -117,8 +117,14 @@ def run_server(ping_interval=10.0):
     sock.settimeout(ping_interval)
     udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udpsock.bind(('0.0.0.0', SERVER_PORT))
+    
+    send_echo_request(sock, NO_RESPONSE_IP)
+    last_time = time.time()
     while True:
-        send_echo_request(sock, NO_RESPONSE_IP)
+        if time.time() - last_time > ping_interval / 2:
+            logging.debug('Sending echo request to %s.' % NO_RESPONSE_IP)
+            send_echo_request(sock, NO_RESPONSE_IP)
+            last_time = time.time()
         try:
             response = sock.recv(BUFSIZE)
         except socket.timeout:
