@@ -21,7 +21,7 @@ BUFSIZE = 4096
 NO_RESPONSE_IP = os.environ.get('NO_RESPONSE_IP', '59.66.1.1')
 ICMP_ECHO_ID = int(os.environ.get('ICMP_ECHO_ID', 42))
 UDP_HELLO_MSG = b'Hello from pypwnat'
-ICMP_HELLO_MSG = b'Hello from pypwnat in ICMP'
+ICMP_HELLO_MSG = b''
 
 
 def get_local_server_ip():
@@ -42,8 +42,11 @@ def checksum(data, checksum_offset=1):
     return Bits(0).join(chunks)
 
 
-def make_ip_packet(src, dst, protocol, body, id=42, ttl=64, hton_length=True):
-    ip_header = Bits(hex='4500') # IP version and type of service and etc
+def make_ip_packet(src, dst, protocol, body, id=42, ttl=64, hton_length=True, add_tos=False):
+    if add_tos:
+        ip_header = Bits(hex='4514') # default tos to 0x14
+    else:
+        ip_header = Bits(hex='4500') # IP version and type of service and etc
     total_length = Bits(length=16, uint=20+body.length//8) # Total length
     # The BSD suite of platforms (excluding OpenBSD) 
     # present the IP offset and length in host byte order.
@@ -69,6 +72,7 @@ def make_icmp_packet(typ, code=0, body=None, id=42, seq=42, add_body_length=Fals
     if add_body_length:
         icmp_header += Bits(length=8, uint=0)
         # icmp_header += Bits(length=8, uint=28 // 4)
+        body += Bits(length=8, uint=0) * (len(body) // 8 % 4)
         icmp_header += Bits(length=8, uint=(len(body) // 8 - 1) // 4 + 1)
         icmp_header += Bits(length=16, uint=0)
     else:
@@ -91,8 +95,8 @@ def send_echo_request(sock, ip, seq=42, id=42):
 def send_time_exceed(sock, server_ip, additional_data=ICMP_HELLO_MSG):
     logging.debug('Sending time exceed message.')
     inner_icmp = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE, id=ICMP_ECHO_ID, body=additional_data)
-    inner_ip = make_ip_packet(server_ip, NO_RESPONSE_IP, ICMP_PROTO, inner_icmp, ttl=1, hton_length=False)
-    icmp_packet = make_icmp_packet(ICMP_TIME_EXCEED_TYPE, id=0, seq=0, body=inner_ip, add_body_length=True)
+    inner_ip = make_ip_packet(server_ip, NO_RESPONSE_IP, ICMP_PROTO, inner_icmp, ttl=1, hton_length=False, add_tos=True)
+    icmp_packet = make_icmp_packet(ICMP_TIME_EXCEED_TYPE, id=0, seq=0, body=inner_ip)
     # ip_packet = make_ip_packet(0, server_ip, ICMP_PROTO, icmp_packet)
     sock.sendto(icmp_packet.bytes, (server_ip, 0))
     return icmp_packet
