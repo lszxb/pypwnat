@@ -62,11 +62,17 @@ def make_ip_packet(src, dst, protocol, body, id=42, ttl=64, hton_length=True):
     return checksum(ip_header, 5) + body
 
 
-def make_icmp_packet(typ, code=0, body=None, id=42, seq=42):
+def make_icmp_packet(typ, code=0, body=None, id=42, seq=42, add_body_length=False):
     icmp_header = Bits(length=8, uint=typ) # type
     icmp_header += Bits(length=8, uint=code) # code
     icmp_header += Bits(hex='0000')  # checksum
-    icmp_header += Bits(length=16, uint=id) + Bits(length=16, uint=seq)
+    if add_body_length:
+        icmp_header += Bits(length=8, uint=0)
+        # icmp_header += Bits(length=8, uint=28 // 4)
+        icmp_header += Bits(length=8, uint=(len(body) // 8 - 1) // 4 + 1)
+        icmp_header += Bits(length=16, uint=0)
+    else:
+        icmp_header += Bits(length=16, uint=id) + Bits(length=16, uint=seq)
     if body is not None:
         icmp_header += body
     icmp_header = checksum(icmp_header)
@@ -86,7 +92,7 @@ def send_time_exceed(sock, server_ip, additional_data=ICMP_HELLO_MSG):
     logging.debug('Sending time exceed message.')
     inner_icmp = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE, id=ICMP_ECHO_ID, body=additional_data)
     inner_ip = make_ip_packet(server_ip, NO_RESPONSE_IP, ICMP_PROTO, inner_icmp, ttl=1, hton_length=False)
-    icmp_packet = make_icmp_packet(ICMP_TIME_EXCEED_TYPE, id=0, seq=0, body=inner_ip)
+    icmp_packet = make_icmp_packet(ICMP_TIME_EXCEED_TYPE, id=0, seq=0, body=inner_ip, add_body_length=True)
     # ip_packet = make_ip_packet(0, server_ip, ICMP_PROTO, icmp_packet)
     sock.sendto(icmp_packet.bytes, (server_ip, 0))
     return icmp_packet
