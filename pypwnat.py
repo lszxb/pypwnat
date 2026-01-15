@@ -65,7 +65,9 @@ def make_ip_packet(src, dst, protocol, body, id=42, ttl=64, hton_length=True, ad
     return checksum(ip_header, 5) + body
 
 
-def make_icmp_packet(typ, code=0, body=None, id=42, seq=42, add_body_length=False):
+def make_icmp_packet(typ, code=0, body=None, id=1, seq=42, add_body_length=False):
+    # seems the id need to be set to 1 for time exceed messages to be received, 42 will not work
+    # on family network environment. more to explore.
     icmp_header = Bits(length=8, uint=typ) # type
     icmp_header += Bits(length=8, uint=code) # code
     icmp_header += Bits(hex='0000')  # checksum
@@ -83,9 +85,9 @@ def make_icmp_packet(typ, code=0, body=None, id=42, seq=42, add_body_length=Fals
     return icmp_header
 
 
-def send_echo_request(sock, ip, seq=42, id=42):
+def send_echo_request(sock, ip):
     ''' a simple ping '''
-    logging.debug('Sending echo request with id=%d, seq=%d.' % (id, seq))
+    logging.debug('Sending echo request')
     icmp_packet = make_icmp_packet(ICMP_ECHO_REQUEST_TYPE)
     ip_packet = make_ip_packet(get_local_server_ip(), ip, ICMP_PROTO, icmp_packet)
     sock.sendto(ip_packet.bytes, (ip, 0))
